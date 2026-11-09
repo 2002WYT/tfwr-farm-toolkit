@@ -23,3 +23,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+The mushroom routine and coal depth markers in `mine_core.py` also draw on
+[Semy0nBu/the-farmer-was-replaced](https://github.com/Semy0nBu/the-farmer-was-replaced).
+See its [MIT license notice](LICENSE-MIT.txt).
