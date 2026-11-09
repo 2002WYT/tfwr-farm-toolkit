@@ -1,11 +1,11 @@
 from farm_rank_core import CATEGORY, SINGLE_DRONE, rank_profile
 
-# 【正式冲榜】在 farm_rank_core 选好项目和组别，再点本窗口左上角 ▶。
-# 游戏用独立库存重复计时，达标后提交 Steam 成绩。
-# SPEEDUP 只调比赛播放速度，保持默认即可。
+# Official leaderboard run. Set the category and drone count in farm_rank_core, then press Run here.
+# The game uses an isolated inventory for repeated timing runs and submits a successful score to Steam.
+# SPEEDUP controls playback speed. The default is suitable for most runs.
 SPEEDUP = 40960
 if CATEGORY == "bone" and SINGLE_DRONE:
-    quick_print("[RANK STOP]", "恐龙榜请选择 SINGLE_DRONE = False")
+    quick_print("[RANK STOP]", "Set SINGLE_DRONE = False for the dinosaur leaderboard.")
 else:
     leaderboard, item, target, water = rank_profile(CATEGORY, SINGLE_DRONE)
     leaderboard_run(leaderboard, "farm_rank_entry", SPEEDUP)

@@ -18,7 +18,7 @@ def run_gold_daily(rounds, workers):
     grid = layout[1]
     side = n // grid
     if side < 2 or (active == 1 and n != 8):
-        # 单机 8×8 的双向寻路已有实测。其他单机尺寸沿用生产路线。
+        # Bidirectional search was tested on 8×8 single-drone fields. Other sizes use the baseline.
         quick_print("[GOLD DAILY]", "standard layout", "size", n, "workers", active)
         return run_gold(rounds, workers)
 
@@ -27,7 +27,7 @@ def run_gold_daily(rounds, workers):
     expected_cost = expected_pickups * substance
     before_substance = num_items(Items.Weird_Substance)
     if before_substance < expected_cost:
-        # 密排迷宫每箱可能多耗一份边长对应的奇异物质。开工前改用走廊布局。
+        # Dense mazes can cost more Weird Substance per chest. Choose the corridor layout before starting if needed.
         quick_print("[GOLD DAILY]", "standard layout", "dense cost", expected_cost,
                     "available", before_substance)
         return run_gold(rounds, workers)
@@ -43,7 +43,7 @@ def run_gold_daily(rounds, workers):
 
     start_at = get_time()
     if active > 1:
-        # 先让无人机各自到位，再让密排迷宫同时生成。按失去电力的速度留余量。
+        # Let every drone reach its planting tile before creating mazes. Allow for travel without power.
         measured_at = get_time()
         if not move(East):
             return False
@@ -53,7 +53,7 @@ def run_gold_daily(rounds, workers):
         start_at = get_time() + (n + active + 8) * action_time * 2
 
     collected = 0
-    # 最后一项为零，每架无人机按自己的轮数收完，不看全田金币目标。
+    # A zero final argument gives each drone its own round limit.
     config = (rounds, grid, side, substance, start_at, 3, 0)
     for pickups in parallel(rank_maze_worker, n, active, config):
         collected += pickups

@@ -1,10 +1,10 @@
 from farm_route import go, parallel
 
 
-# 思路参考公开榜单记录与实验，不使用其脚本或存档。
+# This implementation draws on public leaderboard results and experiments.
 # https://github.com/enihsyou/The-Farmer-Was-Replaced
 # https://github.com/Berman510/tfwr
-# 这些策略用于榜单模拟的初始地块，正常生产继续使用 farm_mix。
+# These strategies assume the starting field used by leaderboard simulations.
 
 
 def _blocks(n, single, workers):
@@ -18,7 +18,7 @@ def _blocks(n, single, workers):
 
 
 def _cycle(bounds):
-    # 蛇形走完主体，留最左列作为返程通道。每步都走到下一个作业格。
+    # Traverse the interior in a serpentine path and reserve the west column for the return.
     x0, x1, y0, y1 = bounds
     route = []
     for y in range(y0, y1):
@@ -56,7 +56,7 @@ def _surface(route, n):
 
 
 def _dispatch(task, n, payloads):
-    # 由已启动的无人机分派另一半区域，缩短满编启动时间。
+    # Let each new drone launch half of the remaining blocks to shorten startup.
     count = len(payloads)
     if count == 1:
         return task(0, n, 1, payloads[0])
@@ -121,7 +121,7 @@ def _hay(worker, n, workers, config):
         for point, direction in points:
             _water(level)
             if can_harvest():
-                # 水足时，往返期间干草能长熟。收获成熟草，再换掉下一株的无效偏好。
+                # With enough water, grass matures during the trip. Harvest it, then reroll the next request if needed.
                 if not harvest():
                     return False
                 if close and num_items(Items.Hay) >= target:
@@ -174,7 +174,7 @@ def _sow(crop, sources, bounds, reserved, irrigation, budget):
                     return [True, request, budget]
         if attempt == 23 or (crop == Entities.Carrot and budget == 0):
             break
-        # 只淘汰本机刚种下的幼苗，重新抽取伴生位置与种类。
+        # Remove only seedlings planted by this drone when rerolling the companion type and location.
         if not harvest():
             return [False, None, budget]
     _water(irrigation)
@@ -233,7 +233,7 @@ def _pipeline(worker, n, workers, config):
                         sow = True
                 if sow:
                     if crop == Entities.Carrot and budget == 0:
-                        # 种子额度已耗尽，其他无人机仍可继续生产。
+                        # This drone has spent its seed budget. Other drones can keep producing.
                         if len(active) == 0:
                             return True
                     else:

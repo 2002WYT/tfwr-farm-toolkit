@@ -1,6 +1,6 @@
-# 第三方声明
+# Third-party notices
 
-`farm_rank_hay_reference.py` 和 `farm_bone_rail.py` 包含 [enihsyou/The-Farmer-Was-Replaced](https://github.com/enihsyou/The-Farmer-Was-Replaced) 的 MIT 代码。适用的原始声明如下。
+`farm_rank_hay_reference.py` and `farm_bone_rail.py` contain MIT-licensed code from [enihsyou/The-Farmer-Was-Replaced](https://github.com/enihsyou/The-Farmer-Was-Replaced). The original notice follows.
 
 MIT License
 

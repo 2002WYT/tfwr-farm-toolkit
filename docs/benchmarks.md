@@ -1,34 +1,34 @@
-# 游戏内验证
+# In-game benchmarks
 
-以下成绩取自 2026-11-09 的 Steam 全球榜复核。单位是游戏秒。单机和多机分别验收，恐龙只有一个资源榜。正式赛由游戏运行多组随机种子并提交成绩，当前榜单可能已有变化。
+These scores were verified on the Steam global leaderboards on November 9, 2026. Times are in game seconds. Single-drone and multi-drone categories were verified separately. Dinosaurs have one resource leaderboard. The game runs multiple random seeds before submitting an official score. Rankings may have changed since this snapshot.
 
-| 项目 | 多机秒数 | 多机名次 | 单机秒数 | 单机名次 |
+| Resource | Multi-drone time (s) | Multi-drone rank | Single-drone time (s) | Single-drone rank |
 |---|---:|---:|---:|---:|
-| 干草 | 111.864 | 71 | 171.675 | 73 |
-| 木材 | 300.756 | 86 | 424.519 | 73 |
-| 胡萝卜 | 263.990 | 52 | 364.775 | 67 |
-| 南瓜 | 423.278 | 83 | 485.940 | 93 |
-| 向日葵能量 | 260.524 | 15 | 327.416 | 11 |
-| 仙人掌 | 34.968 | 67 | 19.712 | 43 |
-| 迷宫金币 | 119.718 | 82 | 144.732 | 63 |
-| 恐龙骨头 | 798.084 | 73 | — | — |
+| Hay | 111.864 | 71 | 171.675 | 73 |
+| Wood | 300.756 | 86 | 424.519 | 73 |
+| Carrots | 263.990 | 52 | 364.775 | 67 |
+| Pumpkins | 423.278 | 83 | 485.940 | 93 |
+| Sunflower power | 260.524 | 15 | 327.416 | 11 |
+| Cactus | 34.968 | 67 | 19.712 | 43 |
+| Maze gold | 119.718 | 82 | 144.732 | 63 |
+| Dinosaur bones | 798.084 | 73 | — | — |
 
-## 复现
+## Reproduce a benchmark
 
-在 `farm_rank_lab.py` 的 `CASES` 中填入 `(模式, 是否单机, 版本, 种子)`，然后在游戏内运行该窗口。`[LAB]` 行记录游戏秒数、实际数量、目标和是否达标。各榜正式版本可在 `farm_rank_core.py` 的 `preferred_variant` 中查看。种子 `1709` 和 `8243` 用于多组候选对照。
+Add `(mode, single_drone, variant, seed)` entries to `CASES` in `farm_rank_lab.py` and run that window in the game. Each `[LAB]` line reports elapsed game seconds, the collected quantity, the target, and whether the run met it. `preferred_variant` in `farm_rank_core.py` lists the versions selected for the official runs. Seeds `1709` and `8243` were used for several comparisons.
 
-例如，下面比较了多机胡萝卜的第 3 版和最终第 6 版。两版目标均为 20 亿胡萝卜。
+This example compares multi-drone carrot variants 3 and 6. Both aim to collect 2 billion carrots.
 
 ```python
 CASES = [("carrot", False, 3, 1709), ("carrot", False, 6, 1709)]
 ```
 
-第 3 版用时 300.58 秒，第 6 版用时 264.75 秒。正式赛结果为 263.990 秒。
+Variant 3 took 300.58 seconds and variant 6 took 264.75 seconds. The official run took 263.990 seconds.
 
-## 日常验证样例
+## Daily harvesting checks
 
-- 满编木材在无浇水、种子 `1709` 和 `8243` 下，每游戏分钟由约 5.58–5.71 亿提升到 11.88–12.01 亿。
-- 满编仙人掌在种子 `1709` 下，每游戏分钟由约 2441 万提升到 2888 万。
-- 恐龙第 8 版在日常科技、种子 `1709` 下，811.20 秒收获 8,372,232 骨头。低库存用例只消耗 5 个苹果的材料，收获 200 骨头。
+- With all drones and watering disabled, wood output rose from about 558–571 million to 1.188–1.201 billion per game minute on seeds `1709` and `8243`.
+- With all drones on seed `1709`, cactus output rose from about 24.41 million to 28.88 million per game minute.
+- With the daily save's research levels and seed `1709`, dinosaur variant 8 collected 8,372,232 bones in 811.20 seconds. A low-stock case used materials for five apples and collected 200 bones.
 
-日常对照随当前存档研究等级、库存和地块而变。带负版号的模拟用例使用当前科技和隔离的测试库存。
+Daily results depend on the save's research levels, inventory, and field. Simulation cases with negative variant numbers use the current research levels and an isolated test inventory.

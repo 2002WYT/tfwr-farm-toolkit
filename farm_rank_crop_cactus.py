@@ -15,7 +15,7 @@ def _move_distance(x, y, tx, ty, n):
 
 
 def _insert(board, x, y, value):
-    # 每次用西、南两格中较大的值填回当前位置，已排好的上界不会被打破。
+    # Move the larger west or south neighbor into this tile to preserve the sorted boundary.
     board[(x, y)] = value
     while True:
         west = -1
@@ -50,7 +50,7 @@ def _seed_and_insert(board, x, y, n):
 
 
 def _single(n, diagonal):
-    # 公开思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus_single.py
+    # Public reference https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus_single.py
     board = {}
     latest = 0
     lines = n
@@ -84,7 +84,7 @@ def _single(n, diagonal):
 
 
 def _row_sort(y, n):
-    # 已在该行最东端，反向扫描可以立即开始。
+    # The drone is already at the east end of the row and can start the reverse pass.
     low = 0
     high = n - 1
     while low < high:
@@ -130,7 +130,7 @@ def _cached_sweep(values, start, end, step, forward, backward, cursor, n):
                     last = previous
             else:
                 break
-            # 在缓存里找到逆序对后才走过去，空扫和折返都能省掉。
+            # Find the inversion in the cache before moving. Skip scans and turns on sorted stretches.
             offset = position - cursor
             if offset == 1:
                 if not move(forward):
@@ -153,7 +153,7 @@ def _cached_sweep(values, start, end, step, forward, backward, cursor, n):
 
 def _cached_sort(values, high, forward, backward, cursor, n):
     low = 0
-    # 第一趟正向比较已在种植或读取时完成，先反向扫描。
+    # Planting or reading completed the forward pass. Start with the reverse pass.
     while low < high:
         low, cursor = _cached_sweep(values, high, low, -1, forward, backward, cursor, n)
         if low == None:
@@ -170,7 +170,7 @@ def _capture_column(x, n):
         return False
     if n == 1:
         return True
-    # 初次量尺寸的走位同时完成正向排序，后续扫描在缓存上进行。
+    # Measure sizes during the forward pass, then use the cache for later passes.
     value = measure()
     behind = value
     values = []
@@ -202,8 +202,8 @@ def _capture_column(x, n):
 
 
 def _seed_rows(worker, n, workers, preswap, cached=False):
-    # 同一无人机负责种植和同行排序，省掉一次全队同步。
-    # 公开思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus.py
+    # Let one drone plant and sort the same row to save a synchronization step.
+    # Public reference https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus.py
     latest = 0
     for y in range(worker, n, workers):
         if not go(0, y, n):
@@ -245,7 +245,7 @@ def _fork_stripes(n, workers, start, end, columns, cached):
                     return False, 0
             return True, 0
         return _seed_rows(start, n, workers, True, cached)
-    # 分叉启动只需等树的深度，无须让主机串行启动整队。
+    # Launch drones in a tree so startup depends on its depth.
     mid = (start + end) // 2
     child = spawn_drone(_fork_stripes, n, workers, mid, end, columns, cached)
     left_ok, left_time = _fork_stripes(n, workers, start, mid, columns, cached)
@@ -285,7 +285,7 @@ def rank_cactus(single, target, variant):
             for ok in parallel(_sort_stripes, n, workers, True):
                 if not ok:
                     return False
-        # 当前游戏的仙人掌生长时间是 1 秒且无随机浮动，移动和交换保留生长进度。
+        # Cacti take one second to grow without random variation. Moving and swapping preserve growth progress.
         while get_time() - latest < 1.05:
             pass
         if not harvest() or num_items(Items.Cactus) <= before:

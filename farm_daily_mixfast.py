@@ -66,7 +66,7 @@ def _hay_harvest(worker, n, workers, config):
     directions = [East, West]
     laps = rounds * 8
     count = 0
-    # 每对生产格每轮各收八次，保留原满编混种每轮 512 次成熟收获的口径。
+    # Each tile in a pair yields eight harvests per round, preserving 512 mature harvests across all drones.
     for lap in range(laps):
         for side in range(2):
             _water(below, workers)
@@ -79,7 +79,7 @@ def _hay_harvest(worker, n, workers, config):
             count += 1
             if lap + 1 < laps:
                 other = pair[1 - side]
-                # 刚重生的草可重抽伴生；如果已成熟，留给下一次正式收割。
+                # Reroll companion requests on regrown grass. Save mature grass for the next scheduled harvest.
                 for attempt in range(36):
                     request = get_companion()
                     if request != None and request[0] == Entities.Bush and request[1] != other:
@@ -124,7 +124,7 @@ def _run_hay(n, workers, rounds, below):
         for ready, harvested in parallel(_hay_harvest, n, workers, collect, True):
             ok = ok and ready
             count += harvested
-    # 灌木可能给相邻分区加成，所有生产结束后再移除脚本种下的灌木。
+    # Bushes can help adjacent blocks. Remove script-planted bushes after all production stops.
     for done in parallel(_hay_cleanup, n, workers, cleanup, True):
         ok = ok and done
     return [ok, count]
@@ -148,7 +148,7 @@ def _carrot_sow(helpers, claims, extra, below, workers):
         if helper >= 0 or extra == 0 or attempt == 23:
             _water(below, workers)
             return [True, extra, helper]
-        # 只有预留的额外种子才用于换伴生，给剩余生产格保留一粒种子。
+        # Use extra seeds to reroll companions and reserve one seed for each remaining production tile.
         if not harvest():
             return [False, extra, -2]
         extra -= 1
@@ -172,7 +172,7 @@ def _carrot_cleanup(n, path, state):
     for x, y, direction, index in path:
         pending, claim, installed, original, remaining, tilled = state[index]
         if remaining < 0 and installed != None and (installed != Entities.Grass or original == Grounds.Soil):
-            # 伴生植物由本机临时种植。生产结束后连同尚未成熟的伴生植物一起收掉。
+            # Remove temporary companions planted by this drone, including any that have not matured.
             if not go(x, y, n) or get_entity_type() != installed or not harvest():
                 ok = False
         if tilled:

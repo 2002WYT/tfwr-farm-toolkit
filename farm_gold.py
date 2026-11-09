@@ -97,8 +97,8 @@ def maze_distance(cell, target):
 
 
 def shortest_maze_path(links, start, target):
-    # A* 的曼哈顿估值每走一步只变动一格，总估价只会保持或增加二。
-    # 用同一估价的桶保存待搜索的位置，省去排序整个队列。
+    # A Manhattan heuristic changes by one per step, so the A* estimate stays put or rises by two.
+    # Group equal estimates in buckets to avoid sorting the entire search queue.
     priority = maze_distance(start, target)
     buckets = {priority: [(start, 0)]}
     distance = {start: 0}
@@ -140,7 +140,7 @@ def follow_maze_path(links, start, target, directions, probe):
     cell = start
     for index in range(len(path) - 1, -1, -1):
         if probe:
-            # 宝藏移动只会拆墙。顺路发现的通道可加入后续寻路图。
+            # Moving treasure only removes walls. Add any corridors found along the route to the graph.
             adjacent = links[cell]
             for direction in range(4):
                 if adjacent[direction] == None and can_move(directions[direction]):
@@ -163,12 +163,12 @@ def gold_worker(worker, n, workers, config):
     if workers > 1:
         left = worker % grid * stride + 1
         bottom = worker // grid * stride + 1
-    # 迷宫先向西南扩张，偶数边长要从中间四格的东北格种下灌木。
+    # Mazes expand southwest first. Plant at the northeast tile of the central four for even sizes.
     x = left + side // 2
     y = bottom + side // 2
     anchor = (x, y)
     if workers > 1:
-        # 从第零行进入地块西侧通道，途中不会进入其他无人机的迷宫。
+        # Approach along row zero and the plot's west corridor to stay out of neighboring mazes.
         if not go(left - 1, 0, n) or not go(left - 1, y, n):
             return 0
 
@@ -192,7 +192,7 @@ def gold_worker(worker, n, workers, config):
             parents = explore_maze(anchor, None, left, bottom, side, directions)
             if parents == None or not follow_tree(parents, anchor, target, directions):
                 return collected
-            # 小迷宫和短批次沿原树走，免去反复搜索通道图的运算。
+            # For small mazes and short runs, follow the original tree to avoid repeated graph searches.
             if side >= 8 and remaining >= 24:
                 links = maze_links(parents)
 
@@ -205,7 +205,7 @@ def gold_worker(worker, n, workers, config):
             else:
                 if not use_item(Items.Weird_Substance, substance):
                     return collected
-                # 等待使用奇异物质的动作结算，宝藏必定移到另一格。
+                # Wait for the Weird Substance action to finish so the treasure has moved to a different tile.
                 next_target = measure()
                 for retry in range(100):
                     if next_target != None and next_target != target:
@@ -224,7 +224,7 @@ def gold_worker(worker, n, workers, config):
 
 
 def gold_geometry(n, workers):
-    # 每座并行迷宫留一条西侧通道，边长至少为二，才能移动宝藏。
+    # Leave a west corridor beside each maze and use sides of at least two tiles so treasure can move.
     limit = 1
     if num_unlocked(Unlocks.Megafarm) > 0:
         limit = min(max_drones(), max(1, n // 3) ** 2)

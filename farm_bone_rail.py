@@ -28,7 +28,7 @@ def harvest_dianosaus():
 
 
 def _known_rim(direction, x, y, last_row, apple_x, apple_y):
-    # 仍在同一段边线上走。已知苹果在前方时，直接把步数截到苹果格。
+    # Stay on the perimeter. If the known apple is ahead, end the segment on its tile.
     if direction == North:
         steps = last_row - y
         if x == apple_x and apple_y > y:
@@ -43,11 +43,11 @@ def _known_rim(direction, x, y, last_row, apple_x, apple_y):
 
 
 def cycle_loop(safety=0):
-    # 参照这个地址来实现
+    # Implementation reference
     # https://www.reddit.com/r/TheFarmerWasReplaced/comments/1o90hxs/my_sna_i_mean_dinosaur_algorithm/
     s = get_world_size()
     m = s - 1
-    l = s * s // 2  # 大于这个长度就强制走汉密顿路径
+    l = s * s // 2  # Use the Hamiltonian-style sweep once the tail passes this length.
 
     dir = East
     snake = 0
@@ -58,7 +58,7 @@ def cycle_loop(safety=0):
             snake += 1
             prediction = measure()
             if safety > 0 and (snake == s * s - 1 or prediction == None):
-                # 最后一次增长只需要离开苹果。先用实际规则确认有路可走。
+                # Finish the last growth by moving off the apple in a legal direction.
                 for direction in [North, East, South, West]:
                     if move(direction):
                         return
@@ -66,91 +66,91 @@ def cycle_loop(safety=0):
             wx, wy = prediction
             known = safety == 3
 
-        # 不留缝隙地占满空间，强迫果子生成在前方，提速 10%
+        # Fill open space to favor apples ahead of the snake. The upstream author measured about a 10% speedup.
         if snake > l:
             if y == 0 and can_move(North) and x % 2 == 1:
                 steps = m - 1
                 if safety == 1 and x == wx and 0 < wy < m:
-                    # 确保下一次测量发生在苹果格，避免直走时跳过更新。
+                    # Stop on the apple so the next measurement updates the target.
                     steps = wy
                 if known and x == wx and 0 < wy and wy <= steps:
-                    # 保留完整波形。中途若经过苹果，直到下一次测量前逐格检查。
+                    # Keep the full sweep. If it crosses an apple, check tiles until the next measurement.
                     known = False
-                for _ in range(steps):  # 避开最北的一行
-                    # 如果不幸在这里吃到果子，会卡死，但是省略判断能提速 10%
+                for _ in range(steps):  # Leave the northernmost row for the return path.
+                    # Crossing an apple here can trap the snake. The upstream author measured about a 10% gain from skipping checks.
                     move(North)
                 continue
 
-        # 访问中心区域的果子
-        if x != 0 and x != m:  # 不在左右两侧
+        # Reach apples in the interior.
+        if x != 0 and x != m:  # Skip the west and east edges.
             if (x == wx or x + 1 == wx) and x % 2 == 1:
-                if can_move(North) and wy > y and wy != m:  # 向北可以到达苹果
+                if can_move(North) and wy > y and wy != m:  # Check whether a northbound move can reach the apple.
                     for _ in range(wy - y):
                         move(North)
                     continue
             if (x == wx or x - 1 == wx) and x % 2 == 0:
-                if can_move(South) and y > wy and wy != 0:  # 向南可以前往苹果
+                if can_move(South) and y > wy and wy != 0:  # Check whether a southbound move can reach the apple.
                     for _ in range(y - wy):
                         move(South)
                     continue
 
-        # 围着操场逆时针转圈
+        # Follow the perimeter counterclockwise.
         if dir == East:
             if y != 0 and can_move(South):
                 if known:
                     _known_rim(South, x, y, m, wx, wy)
                 else:
                     while move(South) and get_entity_type() != Entities.Apple:
-                        continue  # 回归边线
+                        continue  # Return to the perimeter.
                 continue
             if x == m:
-                dir = North  # 在边界转向, 下面直接 move 节约一个循环
-            if not (move(dir) or move(North)):  # 碰到边界或尾巴，向有空间的方向前进
+                dir = North  # Turn north at the boundary and move immediately to save an iteration.
+            if not (move(dir) or move(North)):  # Try the direction with space when the boundary or tail blocks the route.
                 break
             continue
         if dir == West:
             if y == m and can_move(dir) and x > wx + 1:
-                for _ in range(x - wx - 1 - 1):  # 考虑到奇偶性，多减 1
-                    move(dir)  # 快速移过最北边, 因为那是回程的线
+                for _ in range(x - wx - 1 - 1):  # Leave one extra column for parity.
+                    move(dir)  # Traverse the north edge quickly on the return leg.
             if y != m and can_move(North):
                 if known:
                     _known_rim(North, x, y, m, wx, wy)
                 else:
                     while move(North) and get_entity_type() != Entities.Apple:
-                        continue  # 回归边线
+                        continue  # Return to the perimeter.
                 continue
             if x == 0:
-                dir = South  # 在边界转向
-            if not (move(dir) or move(South)):  # 碰到边界或尾巴，向有空间的方向前进
+                dir = South  # Turn south at the boundary.
+            if not (move(dir) or move(South)):  # Try the direction with space when the boundary or tail blocks the route.
                 break
             continue
         if dir == South:
             if x != 0 and can_move(West):
-                move(West)  # 回归边线
+                move(West)  # Return to the perimeter.
                 continue
             if x == 0 and y != 0:
                 if known:
                     _known_rim(South, x, y, m, wx, wy)
                 else:
                     while move(dir) and get_entity_type() != Entities.Apple:
-                        continue  # 边界上走直线，避免循环顶层大 while
+                        continue  # Traverse a straight edge segment inside this loop.
                 if not (can_move(dir) or can_move(East)):
-                    break  # 碰到尾巴
-            dir = East  # 在边界转向
+                    break  # The tail blocks the perimeter.
+            dir = East  # Turn east at the boundary.
             continue
         if dir == North:
             if x != m and can_move(East):
-                move(East)  # 回归边线
+                move(East)  # Return to the perimeter.
                 continue
             if x == m and y != m:
                 if known:
                     _known_rim(North, x, y, m, wx, wy)
                 else:
                     while move(dir) and get_entity_type() != Entities.Apple:
-                        continue  # 边界上走直线，避免循环顶层大 while
+                        continue  # Traverse a straight edge segment inside this loop.
                 if not can_move(dir) and not can_move(West):
-                    break  # 碰到尾巴
-            dir = West  # 在边界转向
+                    break  # The tail blocks the perimeter.
+            dir = West  # Turn west at the boundary.
             continue
 
 

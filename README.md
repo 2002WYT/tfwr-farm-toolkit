@@ -1,32 +1,32 @@
-# 编程农场工具箱
+# The Farmer Was Replaced Toolkit
 
-适用于 Steam 游戏 [The Farmer Was Replaced《编程农场》](https://store.steampowered.com/app/2060160/The_Farmer_Was_Replaced/) 的收割、冲榜和测速脚本。日常入口覆盖作物、能量、金币、骨头和奇异物质。测试时，本体 15 个资源榜均取得 Steam 全球前 100 成绩。查看 [榜单复核与复现方法](docs/benchmarks.md)。
+Harvesting, leaderboard, and benchmarking scripts for [The Farmer Was Replaced](https://store.steampowered.com/app/2060160/The_Farmer_Was_Replaced/). The daily script collects crops, power, gold, bones, and Weird Substance. During testing, the scripts reached the Steam global top 100 in all 15 base-game resource leaderboards. See the [results and reproduction steps](docs/benchmarks.md).
 
-## 安装到游戏
+## Installation
 
-1. 在游戏菜单选择 **加载 → 打开文件夹**，找到要使用的存档目录。先保存当前游戏并备份该目录。
-2. 等当前收割结束或手动停止后，把本项目根目录的 `farm_*.py` 文件复制进存档目录。保留游戏生成的 `__builtins__.py` 与存档文件。
-3. 重新加载该存档。日常脚本会用当前研究和库存，冲榜与模拟需要先解锁对应功能。
+1. In the game menu, select **Load → Open Folder** to locate the save directory. Save the current game and back up that directory.
+2. Let the current harvest finish or stop it, then copy all `farm_*.py` files from the repository root into the save directory. Keep the game's `__builtins__.py` and save files in place.
+3. Reload the save. Daily scripts use the save's current research levels and inventory. Leaderboard runs and simulations require their corresponding unlocks.
 
-这些脚本由游戏内解释器运行。复制整套 `farm_*.py`，各入口需要同目录的辅助模块。
+Run these scripts in the in-game interpreter. The entry points import helper modules from the same directory.
 
-## 使用入口
+## Entry points
 
-| 用途 | 在哪里改 | 运行哪个窗口 |
+| Task | Settings to edit | Window to run |
 |---|---|---|
-| 日常收割 | `farm_run` 的 `MODE` 和 `ROUNDS` | `farm_run` |
-| 正式冲榜 | `farm_rank_core` 的 `CATEGORY` 和 `SINGLE_DRONE` | `farm_rank` |
-| 固定种子测速 | `farm_rank_lab` 的 `CASES` | `farm_rank_lab` |
-| 回归检查 | `farm_test` 的 `SUITE` | `farm_test` |
+| Daily harvesting | `MODE` and `ROUNDS` in `farm_run` | `farm_run` |
+| Official leaderboard run | `CATEGORY` and `SINGLE_DRONE` in `farm_rank_core` | `farm_rank` |
+| Fixed-seed benchmark | `CASES` in `farm_rank_lab` | `farm_rank_lab` |
+| Regression checks | `SUITE` in `farm_test` | `farm_test` |
 
-仓库默认 `ROUNDS = 1`，便于先跑一轮再调大。`WORKERS = 0` 使用满编，`WATER_BELOW = 0` 关闭浇水。适用条件不满足时，各日常入口按策略回退或在播种前停止，输出原因。正式冲榜时，`VARIANT = -1` 选择已验证的版本。恐龙榜用 `SINGLE_DRONE = False`。正式成绩由游戏提交到 Steam。
+The repository defaults to `ROUNDS = 1` so you can try one round before increasing it. `WORKERS = 0` uses all available drones. `WATER_BELOW = 0` disables watering. When the field or inventory is unsuitable, the daily script either uses a fallback route or stops before planting and prints the reason. For leaderboard runs, `VARIANT = -1` selects the validated variant. Set `SINGLE_DRONE = False` for the dinosaur leaderboard. The game submits official scores to Steam.
 
-游戏内可将 `farm_run`、`farm_rank_core` 和 `farm_rank` 保持展开。辅助窗口用 `−` 折叠，设置项旁已有中文注释。
+In the game, keep `farm_run`, `farm_rank_core`, and `farm_rank` open for easy access. Use the minimize button to collapse helper windows. Comments next to each setting explain what it controls.
 
-## 算法与代码来源
+## Algorithms and attribution
 
-- `farm_rank_hay_reference.py` 直接移植 enihsyou 的干草单机和多机路线，封装为可调用函数。
-- `farm_bone_rail.py` 基于同一项目的恐龙波形源码改造。末尾苹果处理和第 8 版边线探测优化在本项目中实现。
-- 其余资源榜实现、日常适配与测试由本项目编写。公开策略的引用、具体算法和适用条件见 [算法说明](docs/algorithms.md)。
+- `farm_rank_hay_reference.py` ports enihsyou's single-drone and multi-drone hay routes into callable functions.
+- `farm_bone_rail.py` adapts the same project's dinosaur perimeter route. This project adds final-apple handling and the variant 8 perimeter optimization.
+- This project implements the other leaderboard routes, daily adapters, and tests. The [algorithm guide](docs/algorithms.md) explains their prerequisites and credits the public strategies that informed them.
 
-两份上游衍生模块保留原作者版权声明和 MIT 许可证。查看 [第三方声明](THIRD_PARTY_NOTICES.md)。
+Both upstream-derived modules retain the original copyright notice and MIT license. See the [third-party notices](THIRD_PARTY_NOTICES.md).

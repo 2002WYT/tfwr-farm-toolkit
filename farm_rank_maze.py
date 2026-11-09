@@ -2,7 +2,7 @@ from farm_gold import explore_maze, follow_tree, gold_geometry, gold_surface, ru
 from farm_route import go, parallel
 
 
-# 思路参考公开的独立小迷宫与动态地图讨论。本实现使用自己的布局和双向搜索。
+# Public discussions on independent mazes and dynamic maps informed this layout and bidirectional search.
 # https://steamcommunity.com/app/2060160/discussions/0/570417860284821148/
 # https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/maze_single.py
 # https://www.reddit.com/r/TheFarmerWasReplaced/comments/1p1nnmk/top_50_maze_single_leaderboard_code_with/
@@ -46,7 +46,7 @@ def maze_graph(tree, left, bottom, side):
 
 
 def two_way_path(links, start, target, stamp, search):
-    # 按层扩展较短的队列。时间戳避免每次清空两份访问记录。
+    # Expand the smaller frontier one layer at a time. Timestamps avoid clearing both visited arrays.
     seen_start, seen_target, from_start, from_target = search
     seen_start[start] = stamp
     seen_target[target] = stamp
@@ -94,7 +94,7 @@ def two_way_path(links, start, target, stamp, search):
 
 
 def straight_path(links, start, target, side):
-    # 只在已知通道上试走曼哈顿距离；成功时路线已经最短。
+    # Try a Manhattan-length route through known corridors. A successful route is already shortest.
     horizontal = target % side - start % side
     vertical = target // side - start // side
     horizontal_direction = 1
@@ -144,7 +144,7 @@ def walk_rank_path(graph, search, start, target, stamp, side, directions, varian
     cell = start
     for index in range(len(path) - 1, -1, -1):
         if probe:
-            # 拆墙只会增添通道。每发现一条边，就从两端的待测名单移除。
+            # Removing a wall adds an edge. Drop each discovered edge from the probe lists at both ends.
             candidates = walls[cell]
             for wall in range(len(candidates) - 1, -1, -1):
                 neighbor, direction = candidates[wall]
@@ -168,7 +168,7 @@ def rank_maze_worker(worker, n, workers, config):
     anchor = (left + side // 2, bottom + side // 2)
     if not go(anchor[0], anchor[1], n):
         return 0
-    # 密排地块没有走廊。所有无人机先到种植点，然后才允许生成迷宫。
+    # The dense layout has no corridors between plots. Move every drone to its planting tile before creating mazes.
     while get_time() + 1.05 < start_at:
         do_a_flip()
     while get_time() < start_at:
@@ -202,7 +202,7 @@ def rank_maze_worker(worker, n, workers, config):
         for pickup in range(remaining):
             if get_entity_type() != Entities.Treasure:
                 return collected
-            # 多机共享金币目标。达标后每架无人机收掉自己的最后一箱即可结束。
+            # Once the shared gold target is reached, each drone collects its final chest and exits.
             if pickup == remaining - 1 or (shared_target > 0 and num_items(Items.Gold) >= shared_target):
                 if not harvest():
                     return collected
@@ -232,7 +232,7 @@ def rank_maze_worker(worker, n, workers, config):
 
 
 def run_rank_maze(single, target, variant=3):
-    # 1 沿用生产路线；2 密排或双向寻路；3 多机共享目标，单机尝试已知直达路径。
+    # Variant 1 uses the baseline. Variant 2 uses dense packing or bidirectional search. Variant 3 shares the gold target or tries known direct paths.
     if variant != 1 and variant != 2 and variant != 3:
         quick_print("[MAZE RANK STOP]", "unknown variant", variant)
         return False
@@ -266,7 +266,7 @@ def run_rank_maze(single, target, variant=3):
         budget = rounds * workers
         if variant == 3 and workers > 1:
             shared_target = target
-            # 到达目标时，至多每架无人机各有一次正在结算的移动和一次收尾收获。
+            # At the target, each drone can still have one treasure move in flight and one final harvest.
             budget = (target - before + side * substance - 1) // (side * substance) + 2 * workers
         required_cost = budget * substance
         before_substance = num_items(Items.Weird_Substance)
@@ -281,7 +281,7 @@ def run_rank_maze(single, target, variant=3):
             return False
         start_at = get_time()
         if workers > 1:
-            # 移动及生成无人机都是 200 ticks。预留失去电力后减速的余量。
+            # Moving and spawning both cost 200 ticks. Leave extra time in case the farm runs out of power.
             measured_at = get_time()
             if not move(East):
                 return False

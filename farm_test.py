@@ -1,5 +1,5 @@
-# 在游戏里执行。mix 比较原版和混种；mix-rank 从零跑混种与迷宫的榜单目标。
-# validation / extras / rank / rank-full / bones / bone-bench / all / smoke / suite / bench 为已有套件。
+# Run in the game. mix compares baseline and companion planting. mix-rank starts from zero.
+# Suites include validation, extras, rank, rank-full, bones, bone-bench, all, smoke, suite, and bench.
 from farm_rank_core import rank_profile
 
 SUITE = "mix-rank"

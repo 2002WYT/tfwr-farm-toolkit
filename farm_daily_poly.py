@@ -53,7 +53,7 @@ def _change_soil(worker, n, workers, config):
 
 
 def _wood_cycle(worker):
-    # 每台无人机走一个 4×8 闭环，最后沿左侧一列返回起点。
+    # Each drone covers a 4×8 loop and returns along the west column.
     x0, y0 = worker % 8 * 4, worker // 8 * 8
     path = [(x0, y0, East)]
     for y in range(y0, y0 + 8):
@@ -121,7 +121,7 @@ def _harvest_wood(worker, n, workers, config):
                         sow = remaining[index] > 0
                 elif not sow:
                     return [False, harvested]
-                # 最后一轮成熟树收完即停，避免留下额外的树苗。
+                # Stop after harvesting the last mature trees to avoid leaving extra seedlings.
                 if sow and not _plant_tree(water_below):
                     return [False, harvested]
             if harvested == expected:
@@ -166,7 +166,7 @@ def run_wood_daily(rounds, workers, water_below):
     ok = True
     restore = []
     if has_soil:
-        # 跨区伴生草会被所有无人机使用，先全部准备，最后再全部恢复。
+        # All drones can use the shared companion grass. Prepare it before harvesting and restore it afterward.
         for ready, changed in parallel(_change_soil, n, active, work, True):
             ok = ok and ready
             if len(changed) > 0:

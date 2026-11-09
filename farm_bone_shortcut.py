@@ -13,7 +13,7 @@ def _cell(index, n):
 
 
 def _rows(plan, x, y, target_x, target_y):
-    # 蛇形区向北总是前进。横向移动选最后一条方向一致的行。
+    # North always advances the cycle within the serpentine rows. Use the last row that faces the needed direction.
     row = target_y
     if target_x > x and row % 2 == 1 or target_x < x and row % 2 == 0:
         row -= 1
@@ -29,7 +29,7 @@ def _rows(plan, x, y, target_x, target_y):
 
 
 def _west_edge(plan, x, y, minimum_row):
-    # 西侧返程从上向下。入口行必须不低于目标，奇数行才可向西横穿。
+    # The west edge runs south. Join it at or above the target, using an odd row to travel west.
     entry = max(y, minimum_row)
     west_row = entry
     if x > 1 and entry % 2 == 0:
@@ -52,7 +52,7 @@ def _route(index, cap, n):
     plan = []
     if target_x == 0:
         if cap > cells or index == 0:
-            # 已绕回下一圈。先离开当前返程，再从上方接入下一圈返程。
+            # The target is on the next circuit. Leave the current return edge and rejoin the next one from above.
             if x != 0:
                 return None
             plan.append((East, 1))
@@ -70,7 +70,7 @@ def _route(index, cap, n):
     if x == 0:
         exit_row = target_y
         if target_y % 2 == 1 and target_x > 1:
-            # 奇数行的 x=1 在目标之后，应从下面的偶数行进入。
+            # On an odd row, x=1 comes after the target. Approach from the even row below.
             exit_row -= 1
         exit_row = min(y, exit_row)
         plan.append((South, y - exit_row))
@@ -98,7 +98,7 @@ def fast_prefix(index, budget, n, directions, runs):
     if cap > cells:
         x, y = _cell(index, n)
         if x > 0 and y > 0:
-            # 向南会跳到下一圈。仅在目标之前、且总路线更短时使用。
+            # A southbound step can skip into the next circuit. Use it only if it stays before the target and shortens the route.
             below = cycle_index(x, y - 1, n)
             if cells + below <= cap:
                 south_plan = _route(below, cap - cells, n)
@@ -109,7 +109,7 @@ def fast_prefix(index, budget, n, directions, runs):
     if plan == None:
         return advance_shortcut(index, budget, n, directions, runs)
 
-    # 每段沿闭环正序前进，且终点恰好是预算上限。调用方再走连续尾长步。
+    # Advance in cycle order and use exactly the shortcut budget. The caller then follows the cycle for one tail length.
     moved = 0
     for direction, count in plan:
         for step in range(count):

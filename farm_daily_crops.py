@@ -25,7 +25,7 @@ def _surface(crop, n, active):
 
 
 def _water(below, active):
-    # 每架机最多同时补一桶，库存不足时等自然生长。
+    # Each drone can use one tank at a time. Let plants grow naturally if water is scarce.
     if below > 0 and get_water() < below and num_items(Items.Water) >= active:
         use_item(Items.Water)
 
@@ -87,7 +87,7 @@ def _pumpkin_worker(worker, n, workers, config):
         count += 1
     collected = 0
     for batch in range(count):
-        # 每块独立收获。留一格隔开各块，两机分担 24 和 25 格。
+        # Leave one tile between blocks. Two drones share each block, taking 24 and 25 tiles.
         child = spawn_drone(_pumpkin_part, n, x, y, 24, 49, water, active)
         if child == None:
             ok = _pumpkin_part(n, x, y, 0, 49, water, active)
@@ -115,7 +115,7 @@ def run_pumpkin_daily(rounds, workers, water_below):
     if num_unlocked(Unlocks.Watering) == 0:
         water_below = 0
 
-    # 每个分区按同样的单格倍率产出，补足整田轮数对应的最低产量。
+    # Use the same per-tile yield multiplier in every block to meet the full-field round target.
     patches = (rounds * n * n + 48) // 49
     cost = get_cost(Entities.Pumpkin)
     for item in cost:
@@ -199,7 +199,7 @@ def _flower_worker(worker, n, workers, config):
             if not go(x, y, n) or not _wait_mature(deadline) or not harvest():
                 return False
         if petals > 0:
-            # 正常收草作为各档信号，不翻动标记格的地面。
+            # Harvest grass as a synchronization signal while leaving the marker tile intact.
             if not _flower_marker(mark_x, mark_y, count > 0, n, deadline):
                 return False
             barrier = hay_start + (9 - petals) * workers * signal_gain

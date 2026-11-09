@@ -42,7 +42,7 @@ def _seed_block(worker, n, workers, signal):
                     return False, buckets, (mark_x, mark_y)
                 petals = measure()
                 buckets[petals - 7].append((x, y))
-                # 花瓣多的先收，只给这些靠后的新苗加水。
+                # Harvest high-petal flowers first and water only the later high-petal plantings.
                 if petals >= 13 and y >= (bottom + top) // 2 and get_water() < 0.45:
                     if num_items(Items.Water) >= 2 + 3 * (workers - 1):
                         use_item(Items.Water, 2)
@@ -119,7 +119,7 @@ def _wave_batch(n, workers, keep):
 
 
 def _signal(mark, at_flower, n, deadline):
-    # 用正常收获的干草通知队友。若刚收过花，原地种草可少走一段路。
+    # Use harvested hay to signal completion. After harvesting a flower, plant grass in place to save a trip.
     if at_flower:
         if not plant(Entities.Grass):
             return False
@@ -147,7 +147,7 @@ def _sync_worker(worker, n, workers, config):
             break
         if not _signal(marker, count > 0, n, deadline):
             return False
-        # 所有人收完当前花瓣档，才进入下一档，保留最高花瓣奖励。
+        # Wait for every drone to finish the current petal group before moving on to preserve the bonus.
         barrier = hay_start + (8 - petals + 1) * workers * signal_gain
         while num_items(Items.Hay) < barrier:
             if get_time() >= deadline:
@@ -156,7 +156,7 @@ def _sync_worker(worker, n, workers, config):
 
 
 def _sync_batch(n, workers, carrot_cost):
-    # 公开思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/sunflowers.py
+    # Public reference https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/sunflowers.py
     expected_cost = carrot_cost * (n * n - workers)
     carrots = num_items(Items.Carrot)
     if carrots < expected_cost:

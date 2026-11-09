@@ -2,8 +2,8 @@ from farm_route import go
 from farm_rank_poly import _blocks, _cycle, _dispatch, _install, _surface
 
 
-# 独立实现。干草双格思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced
-# 只用于榜单模拟，正常生产继续使用 farm_mix。
+# Independent implementation. The hay pair layout draws on https://github.com/enihsyou/The-Farmer-Was-Replaced
+# These variants use leaderboard conditions. Daily harvesting uses its own entry points.
 
 
 def _water_to(level):
@@ -30,7 +30,7 @@ def _hay_layout(n, single):
         pairs.append(pair)
         sources[pair[0]] = True
         sources[pair[1]] = True
-    # 仅种草可选中的格子。每对草与其他对至少隔四格，唯一冲突是本对的另一格。
+    # Plant only reachable companion tiles. Other grass pairs are at least four tiles away.
     bushes = {}
     for x, y in sources:
         for dy in range(-3, 4):
@@ -45,7 +45,7 @@ def _hay_layout(n, single):
 def _prepare_hay(n, bounds, pair, bushes):
     x0, x1, y0, y1 = bounds
     if n % 2 == 1:
-        # 5×5 单机的奇数边不能套用偶数行闭环，直接访问每个伴生点。
+        # Visit companion tiles directly on 5×5 single-drone fields. The loop requires an even row count.
         for x, y in bushes:
             if not go(x, y, n) or not plant(Entities.Bush):
                 return False
@@ -83,7 +83,7 @@ def _hay_pair(worker, n, workers, config):
     while num_items(Items.Hay) < target and get_time() < deadline:
         for side in range(2):
             _water_to(level)
-            # 等待本株成熟，省去来回空走，也保留已经选中的伴生偏好。
+            # Wait on this tile to keep its companion request and avoid an extra trip.
             while not can_harvest():
                 if get_time() >= deadline:
                     return False
@@ -120,7 +120,7 @@ def _hay_pair_quick(worker, n, workers, config):
             if moisture < threshold and num_items(Items.Water) > 16:
                 if use_item(Items.Water):
                     moisture += 0.25
-            # 湿润时，两次走位与对格的收割已经给草留出了成熟时间。
+            # With enough water, two moves and a harvest on the other tile give the grass time to mature.
             if moisture < 0.65:
                 while not can_harvest():
                     pass
@@ -145,7 +145,7 @@ def _wood_static(worker, n, workers, config):
     route = _cycle(bounds)
     if not _surface(route, n):
         return False
-    # 全田的奇数格始终是草地，因此允许树选择其他无人机区域的伴生草。
+    # Keep all odd checkerboard tiles as grass so trees can use companions in other blocks.
     for point, direction in route:
         x, y = point
         if (x + y) % 2 == 1 and get_ground_type() == Grounds.Soil:

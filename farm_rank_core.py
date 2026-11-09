@@ -3,22 +3,22 @@ from farm_mix import run_mix
 from farm_gold import gold_geometry
 
 
-# 【冲榜设置】通常只改 CATEGORY 和 SINGLE_DRONE，再到 farm_rank 点 ▶。
-# CATEGORY 可选 hay 干草 / wood 木材 / carrot 胡萝卜 / pumpkin 南瓜
-# power 向日葵 / cactus 仙人掌 / gold 迷宫 / bone 恐龙骨头
+# Leaderboard settings. Set CATEGORY and SINGLE_DRONE, then run farm_rank.
+# Valid CATEGORY values include hay, wood, carrot, pumpkin, power, cactus, gold, and bone.
+# Use power for sunflowers, gold for mazes, and bone for dinosaurs.
 CATEGORY = "cactus"
-# SINGLE_DRONE 为 True 时选单机榜，False 时选多机榜。bone 只能选 False。
+# SINGLE_DRONE = True selects the single-drone board. Set it to False for dinosaurs.
 SINGLE_DRONE = False
-# MIXED 只影响 VARIANT = 0 的干草、木材和胡萝卜对照。
+# MIXED affects only the variant 0 baseline for hay, wood, and carrots.
 MIXED = True
-# VARIANT 用 -1 自动选择实测版本。0 为旧版，正整数用于复测指定版本。
+# VARIANT = -1 selects the verified route. Use 0 for the baseline or a positive number to retest a variant.
 VARIANT = -1
 
 
 def preferred_variant(mode, single):
     if VARIANT >= 0:
         return VARIANT
-    # 每对数字依次为多机、单机。日常入口有自己的兼容性判断。
+    # Each pair lists the multi-drone variant first. Daily harvesting checks its own prerequisites.
     variants = {
         "hay": (8, 8), "wood": (4, 2), "carrot": (6, 2), "pumpkin": (5, 5),
         "power": (3, 3), "cactus": (4, 2), "gold": (3, 3), "bone": (8, 8),
@@ -60,7 +60,7 @@ def compete(mode, single):
     start = get_time()
     quick_print("[RANK START]", leaderboard, "target", target, "size", get_world_size(), "workers", workers)
     if MIXED and (mode == "hay" or mode == "wood" or mode == "carrot"):
-        # 混种在整次冲榜中复用分区和伴生植物，达标后才清理。
+        # Reuse the blocks and companions across the entire run. Clean up after reaching the target.
         ok = run_mix(mode, 1, workers, water, target)
         if not ok or num_items(item) < target:
             quick_print("[RANK FAIL]", leaderboard, "current", num_items(item), "target", target)
@@ -71,7 +71,7 @@ def compete(mode, single):
 
     rounds = 1
     if mode == "gold":
-        # 单机复用整田迷宫，多机同时复用互不干扰的小迷宫。
+        # Reuse the full-field maze with one drone, or run separate mazes in parallel.
         active, grid, stride, side = gold_geometry(get_world_size(), workers)
         scale = 2 ** (num_unlocked(Unlocks.Mazes) - 1)
         per_round = active * side ** 2 * scale

@@ -21,7 +21,7 @@ def run_rank_crop(mode, single, target, variant=3):
         route = rank_power
     else:
         return False
-    # 第一档保留原方案做同种子对照，后续档位运行候选优化。
+    # Variant 1 is the same-seed baseline. Higher variants run the candidate routes.
     if variant > 1:
         return route(single, target, variant)
     workers = 0

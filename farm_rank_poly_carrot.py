@@ -3,7 +3,7 @@ from farm_rank_poly import _blocks, _cycle, _dispatch, _install
 
 
 def _pattern(variant):
-    # 让主作物靠近 4×8 分区中部，保留能接收伴生请求的边缘地块。
+    # Put production tiles near the center of each 4×8 block and leave outer tiles available for companions.
     if variant == 2:
         return [(0, 3), (1, 2), (1, 4), (1, 6), (2, 1), (2, 5), (2, 6), (3, 2)]
     return [(0, 4), (1, 1), (1, 2), (1, 5), (2, 1), (2, 2), (2, 5), (2, 6)]
@@ -26,14 +26,14 @@ def _sow(helpers, claims, seeds, level):
                     claim[1] += 1
                     helper = index
         if helper >= 0 or seeds == 0 or attempt == 23:
-            # 整次补水只调用一次；短缺时留一个小余量，避免其他无人机同时用完库存。
+            # Water in one call and leave some stock for other drones that may be watering at the same time.
             water = get_water()
             if water < level:
                 doses = -((water - level) * 4 // 1)
                 if num_items(Items.Water) > doses + 4:
                     use_item(Items.Water, doses)
             return [True, seeds, helper]
-        # 只清掉自己刚种下且伴生位置不合适的幼苗。
+        # Remove only newly planted seedlings with an unsuitable companion tile.
         if not harvest():
             return [False, seeds, -2]
     return [False, seeds, -2]
@@ -103,7 +103,7 @@ def _work(worker, n, workers, config):
                     requests[index] = helper
                     active += 1
                 elif sow and active == 0:
-                    # 本机没有种子和待收作物，其他分区仍可继续。
+                    # This drone has no seeds or pending harvests. Other blocks can keep producing.
                     return True
             else:
                 crop, count = claims[index]

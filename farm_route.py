@@ -1,5 +1,5 @@
 def move_axis(offset, forward, backward, n):
-    # 地表边缘可以绕回，走较短的一侧。
+    # Surface edges wrap. Take the shorter direction.
     steps = offset % n
     direction = forward
     if steps * 2 > n:
@@ -17,7 +17,7 @@ def go(x, y, n):
 
 
 def parallel(task, n, workers, arg, split=False):
-    # 主机处理第一块，子机各管一块。结果按编号返回，下一阶段等全部结束再开始。
+    # Run one block locally and give each child its own block. Wait for all results before the next phase.
     handles = []
     for worker in range(1, workers):
         payload = arg

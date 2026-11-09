@@ -104,7 +104,7 @@ def run_multi_hay():
         y = get_pos_y()
         x_east = get_pos_x()
         x_west = x_east - 1
-        for _ in range(360):  # 每部无人机预计需要 381 次收集能达到目标
+        for _ in range(360):  # Each drone is expected to need about 381 cycles to reach the target.
             harvest_poly_hay(x_west, y)
             move(West)
             harvest_poly_hay(x_east, y)
@@ -174,7 +174,7 @@ def run_multi_hay():
 
 
 def run_single_hay():
-    # 周围三格种上草丛
+    # Plant bushes within three tiles of the grass pair.
     set_world_size(5)
     for dir in (
         North,
@@ -214,15 +214,15 @@ def run_single_hay():
     move(East)
     # at (0, 0)
 
-    W = 0.68  # 替代 can_harvest() 等待时间的最小值
+    W = 0.68  # Minimum water level that lets grass grow between harvests.
     A, B = (0, 0), (1, 0)
 
-    # 理想状态下需要 1220 次完整加成的 harvest
+    # At full bonus, the ideal run needs 1,220 harvests.
 
-    # 第一个循环，补水
+    # First phase. Fill the water supply on both tiles.
     while get_water() < W:
         use_item(Items.Water)
-    harvest()  # move 消耗的时间基本抵消了成长时间，无需 can_harvest()
+    harvest()  # Movement gives the grass enough time to grow between harvests.
     c, pos = get_companion()
     while c != Entities.Bush or pos == B:
         harvest()
@@ -238,11 +238,11 @@ def run_single_hay():
         c, pos = get_companion()
     move(West)
 
-    # 第二个循环，省略数量判断
+    # Second phase. Run a fixed number of cycles before checking the total.
     for _ in range(604):
         if get_water() < W:
             use_item(Items.Water)
-        harvest()  # move 消耗的时间基本抵消了成长时间，无需 can_harvest()
+        harvest()  # Movement gives the grass enough time to grow between harvests.
         c, pos = get_companion()
         while c != Entities.Bush or pos == B:
             harvest()
@@ -258,9 +258,9 @@ def run_single_hay():
             c, pos = get_companion()
         move(West)
 
-    # 第三个循环，省略补水，直到收集足够的干草
+    # Final phase. Collect the remaining hay without further watering.
     while True:
-        harvest()  # move 消耗的时间基本抵消了成长时间，无需 can_harvest()
+        harvest()  # Movement gives the grass enough time to grow between harvests.
         if num_items(Items.Hay) > 100000000:
             break
         c, pos = get_companion()

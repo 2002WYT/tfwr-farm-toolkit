@@ -2,7 +2,7 @@ from farm_route import go, parallel
 
 
 def _regions(n, workers):
-    # 把田地分成紧凑矩形，让相距几格的主作物和伴生作物尽量由同一架无人机管理。
+    # Use compact rectangular blocks so one drone can manage nearby crops and companions.
     rows = 1
     while (rows + 1) ** 2 <= workers:
         rows += 1
@@ -42,12 +42,12 @@ def _inspect(n, bounds, crop):
             protected = current != None and (current != Entities.Grass or ground == Grounds.Soil)
             main = (x + y) % 2 == 0
             if crop == Entities.Tree and n > 1 and n % 2 == 1 and (x == n - 1 or y == n - 1):
-                # 奇数边长的田地会绕边，留空边缘避免树木相邻而减速。
+                # Leave the outer edge of odd-sized fields clear to keep trees apart across the wrap.
                 main = False
             if main and not protected:
                 sources.append(point)
             else:
-                # 原有作物可以提供加成，但只有脚本栽种的伴生作物可以替换。
+                # Existing crops can supply a bonus. Only replace companions planted by this script.
                 helpers[point] = [current, ground, protected, False]
                 order.append(point)
     return [True, sources, helpers, order]
@@ -91,7 +91,7 @@ def _prepare(n, crop, sources, helpers, water_below, mixed):
 def _wait_harvest(crop):
     if get_entity_type() != crop:
         return False
-    # 原有树木可能让相邻树木的生长耗时成倍增加。
+    # Existing trees can multiply the growth time of adjacent trees.
     deadline = get_time() + 180
     while not can_harvest():
         if get_time() >= deadline:
@@ -113,7 +113,7 @@ def _apply_helpers(n, votes, order, helpers, choices, carrot_budget):
         if current in counts:
             best = counts[current]
         if not protected:
-            # 相同票数优先保留当前作物，省去补种与消耗。
+            # Keep the current crop on a tie to save replanting work and materials.
             for kind in choices:
                 if kind in counts and counts[kind] > best:
                     if kind != Entities.Carrot or carrot_budget > 0:
@@ -154,7 +154,7 @@ def _apply_helpers(n, votes, order, helpers, choices, carrot_budget):
 def _collect(n, crop, pending):
     harvested = 0
     deadline = get_time() + 180
-    # 先收成熟地块，整趟没有进展才等待生长。
+    # Harvest ripe tiles first. Wait for growth only after a pass with no progress.
     while len(pending) > 0 and get_time() < deadline:
         waiting = []
         for point in pending:
@@ -202,7 +202,7 @@ def _work(worker, n, workers, config):
     while (target > 0 and num_items(output) < target) or (target == 0 and batches < rounds):
         helper_budget = budget
         if crop == Entities.Carrot:
-            # 各无人机使用独立种子额度，主作物优先。
+            # Give each drone its own seed budget and reserve seeds for the primary crop.
             if budget < len(sources):
                 ok = target > 0
                 break

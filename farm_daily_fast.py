@@ -23,7 +23,7 @@ def run_cactus_daily(rounds, workers, water_below, variant=3):
             quick_print("[CACTUS DAILY STOP]", "foreign crop or non-surface ground")
             return False
         if occupied > 0:
-            # 旧田的成熟程度不一致，由原日常路线接管已有仙人掌。
+            # Use the baseline to finish existing cactus plants that may have different growth times.
             return run("cactus", rounds, workers, water_below)
 
     before = num_items(Items.Cactus)
@@ -45,7 +45,7 @@ def run_gold_preferred(rounds, workers):
         active = max_drones()
     if workers > 0:
         active = min(active, workers)
-    # 短批次的密排启动开销高。只在单机 8×8 或满编长批次启用新路线。
+    # Dense packing has a higher setup cost. Use it on 8×8 single-drone fields or long runs with all drones.
     if (n == 8 and active == 1) or (n == 32 and active == 32 and rounds >= 301):
         return run_gold_daily(rounds, workers)
     return run("gold", rounds, workers, 0)
@@ -60,7 +60,7 @@ def run_bones_daily(rounds, rail=False):
     level = num_unlocked(Unlocks.Dinosaurs)
     if n != 32 or level == 0 or rounds < 1 or rounds % 1 != 0:
         return run_bones(rounds, True)
-    # 库存只能跑部分蛇尾时，仍按库存收一条确定安全的闭环。
+    # If stock only supports part of a tail, use the safe cycle for the available apples.
     if not rail:
         return run_bones(rounds, True, True, [_daily_bone_tail])
     cost = get_cost(Entities.Apple)

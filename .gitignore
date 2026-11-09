@@ -1,8 +1,7 @@
-# 本机保存的 Steam 截图、原始输出和证据
-/冲榜结果/
+# Local benchmark output
 /farm-verification.txt
 
-# 游戏存档和本地状态
+# Game saves and local state
 /Saves/
 /Save0/
 /RankLab/
@@ -13,7 +12,7 @@ Player.log
 __builtins__.py
 steam_autocloud.vdf
 
-# 本地工具生成文件
+# Local tooling artifacts
 __pycache__/
 *.py[cod]
 .idea/

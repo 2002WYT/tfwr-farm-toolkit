@@ -5,7 +5,7 @@ def _water(wanted, concurrent):
     level = get_water()
     if level < wanted:
         count = (wanted - level + 0.2499) // 0.25
-        # 其他无人机也可能刚查完库存，给它们各留出一次最大用量。
+        # Other drones may have checked the same stock. Reserve enough water for one full refill each.
         if count > 0 and num_items(Items.Water) >= count + 3 * (concurrent - 1):
             use_item(Items.Water, count)
 
@@ -18,7 +18,7 @@ def _distance(a, b, n):
 def _whole_square(x, y, n):
     if (x != 0 and x != n - 1) or (y != 0 and y != n - 1):
         return False
-    # 同时比对角落两个环绕方向，确认同一棵南瓜覆盖整田。
+    # Check both wrapped neighbors at the corner to confirm that one pumpkin spans the field.
     value = measure()
     horizontal = East
     vertical = North
@@ -49,7 +49,7 @@ def _repair(n, points, target, variant, wanted, concurrent, whole=False):
                 _water(dose, concurrent)
             elif (variant >= 3 and get_time() - start >= 1.7
                   and num_items(Items.Fertilizer) >= concurrent):
-                # 只催熟末尾拖慢整个方块的少数南瓜，避免普遍染色损失产量。
+                # Fertilize only the few plants that are holding up the block to limit yield loss from infection.
                 use_item(Items.Fertilizer)
             if not can_harvest():
                 remaining.append((x, y))
@@ -65,7 +65,7 @@ def _pumpkin_rows(n, bounds, target, variant):
     forward, back, vertical = East, West, North
     step_y = 1
     if variant >= 4 and n < 16:
-        # 单机上一轮在哪结束，就从距它最近的角开始下一轮。
+        # Start each single-drone round at the corner closest to the previous finishing point.
         x, y = get_pos_x(), get_pos_y()
         if _distance(x, right - 1, n) < _distance(x, left, n):
             first_x = right - 1
@@ -99,7 +99,7 @@ def _pumpkin_rows(n, bounds, target, variant):
                 till()
             if not plant(Entities.Pumpkin):
                 return False
-            # 第一遍巡查时，早种的已经自然长熟；缺水的多机只优先补种苗。
+            # Early plantings can mature during the first pass. When water is scarce, prioritize replacements.
             if (variant < 4 or (variant >= 5 and n == 6)
                     or (n < 16 and row >= height * 3 // 4)
                     or (n >= 16 and num_items(Items.Water) >= 8 * concurrent)):
@@ -114,7 +114,7 @@ def _pumpkin_rows(n, bounds, target, variant):
 
 
 def _pumpkin_slice(n, x, y, side, begin, end, target):
-    # 沿同一条蛇形路线切成等长两段，7×7 方块分成 24 和 25 格。
+    # Split the same serpentine path into two near-equal parts of 24 and 25 tiles.
     concurrent = max_drones()
     points = []
     for index in range(begin, end):
@@ -144,8 +144,8 @@ def _pumpkin_slice(n, x, y, side, begin, end, target):
 
 
 def _patch(n, x, y, side, target, variant, paired):
-    # 每个方块独立合并、采收、重种，不必等全田最后一株。
-    # 公开思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/pumpkins.py
+    # Each block can merge, harvest, and replant as soon as it is ready.
+    # Public reference https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/pumpkins.py
     while num_items(Items.Pumpkin) < target:
         child = None
         end = y + side
@@ -166,7 +166,7 @@ def _patch(n, x, y, side, target, variant, paired):
             ok = _pumpkin_rows(n, (x, x + side, y, end), target, variant)
         if child != None:
             if variant >= 4 and ok and num_items(Items.Pumpkin) < target:
-                # 子机还在补苗时，主机先走到合并南瓜的收获点。
+                # The main drone can move to the harvest tile while its helper is still replacing seedlings.
                 ok = go(x, y, n)
             ok = wait_for(child) and ok
         if not ok:
@@ -190,7 +190,7 @@ def _patch_worker(worker, n, workers, config):
 def rank_pumpkin(single, target, variant):
     n = get_world_size()
     if single and variant >= 5 and n > 6:
-        # 公开思路参考 https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/pumpkins_single.py
+        # Public reference https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/pumpkins_single.py
         set_world_size(6)
         n = get_world_size()
         if n != 6:

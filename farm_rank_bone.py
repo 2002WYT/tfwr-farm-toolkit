@@ -5,13 +5,13 @@ from farm_route import go
 
 
 def _follow(index, distance, directions, runs, cells, variant):
-    # 一段内始终同向。每个苹果处再校验落点，直线路段只付移动开销。
+    # Move straight along each segment and validate the position at the next apple.
     while distance > 0:
         direction = directions[index]
         count = min(distance, runs[index])
         remainder = count
         if variant == 3 and count >= 8:
-            # 长直线展开，分摊游戏解释器每次循环的额外刻数。
+            # Unroll long straight segments to reduce the interpreter ticks spent on loop overhead.
             for block in range(count // 8):
                 move(direction)
                 move(direction)
@@ -47,7 +47,7 @@ def rank_tail(n, goal, directions, runs, variant):
         distance = (target - index) % cells
         if distance == 0 or distance > cells - length:
             return moves, "apple outside free arc"
-        # 最后 length 步都沿闭环走，让之前捷径留下的空格退出蛇身。
+        # Follow the cycle for the last length steps so the shortcut gaps fall behind the tail.
         if distance > length + 1:
             prefix = advance_shortcut
             if variant >= 4:
@@ -72,13 +72,13 @@ def run_rank_bone(target, variant=3):
     level = num_unlocked(Unlocks.Dinosaurs)
     if n != 32 or level == 0:
         return False
-    # 冲榜田地由游戏创建，起始无其他作物。日常入口仍会查田和库存。
+    # The game starts leaderboard runs on a fresh field. The daily entry point checks the field and inventory.
     cost = get_cost(Entities.Apple)
     for item in cost:
         if num_items(item) < cost[item] * (n * n - 1):
             return False
     if variant >= 5:
-        # 边框波形走法从西南角起步。第六档在中途苹果停下，第七档保留完整的波形。
+        # Start the perimeter route at the southwest corner. Variant 6 stops at intermediate apples. Variant 7 keeps each sweep intact.
         if not go(0, 0, n):
             return False
         before = num_items(Items.Bone)

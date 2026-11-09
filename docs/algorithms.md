@@ -1,37 +1,37 @@
-# 《编程农场》资源收集算法
+# Resource collection algorithms
 
-比赛入口在 `farm_rank.py`。在 `farm_rank_core.py` 改 `CATEGORY` 和 `SINGLE_DRONE`，再运行比赛入口。`VARIANT = -1` 会自动选择本轮提交成功的版本。设为正数可重跑指定版本，设为 `0` 可测原版。`SINGLE_DRONE = True` 选择单机，`False` 选择多机。骨头只有一个 32×32 榜。`farm_rank_entry.py` 是游戏对每个随机种子调用的程序。固定种子测速从 `farm_rank_lab.py` 运行，和正式提交分开。
+Run `farm_rank.py` after setting `CATEGORY` and `SINGLE_DRONE` in `farm_rank_core.py`. Use `VARIANT = -1` to select the variant used for the verified score, a positive number to rerun a specific variant, or `0` to test the baseline. Set `SINGLE_DRONE` to `True` for single-drone runs or `False` for multi-drone runs. Bones have one 32×32 leaderboard. The game calls `farm_rank_entry.py` for each random seed. Run `farm_rank_lab.py` for fixed-seed tests.
 
-日常入口在 `farm_run.py`。通常只改 `MODE` 和 `ROUNDS`。`WORKERS = 0` 用满编，`WATER_BELOW = 0` 关浇水。`MIXED = True` 让干草、木材和胡萝卜启用伴生路线。日常版保留有限轮数、种子预算和地块检查。检测到其他作物就停止，几何或库存不合适时按各资源的守卫切换到原路线。
+For daily harvesting, set `MODE` and `ROUNDS` in `farm_run.py`. `WORKERS = 0` uses all available drones, and `WATER_BELOW = 0` disables watering. `MIXED = True` enables companion planting for hay, wood, and carrots. Daily routes run for a finite number of rounds, budget their seeds, and check the field before planting. Depending on the resource, unsuitable fields or insufficient stock trigger a fallback or a stop.
 
-## 干草、木材与胡萝卜
+## Hay, wood, and carrots
 
-- 干草 `hay`。每个无人机守一对相邻的草格。周围预种灌木，再用 `get_companion()` 确认伴生需求。对于不合适的需求，用正常收割刷新。自写版本先后比较四格、双格和 8×4 隔离分区。最后采用更快的公开实现。它让无人机按交错布局分头到位，利用两格来回移动和另一格收割的时间让草长熟，单机正式场缩到 5×5 减少布置开销。日常代码另行检查地块。
-- 木材 `wood`。树之间留一格，避免相邻树木延长生长时间。较早版本用每区的伴生锁表协调请求。后续版本让棋盘格的一半永久保留为草，树可安全接受跨区的草伴生请求，收割后只重种生产格。灌溉阈值在多种种子上比较。
-- 胡萝卜 `carrot`。较早版本将生产点和伴生点分区，缓存各伴生点的类型和引用次数。动态分配版移动和重种成本较高。最终多机版在 4×8 区块中重新选择八个生产点，让主作物靠近中部、周围留更多可接受的伴生位置。数组索引直接记录请求，多个同类型请求共享一格，最后一个请求结束后才释放。每架无人机有单独的播种额度。
+- **Hay (`hay`)** assigns each drone two adjacent grass tiles and plants bushes around them. `get_companion()` reveals the requested companion. Harvesting rerolls unsuitable requests. Initial experiments compared four-tile plots, pairs, and isolated 8×4 blocks. The faster public route uses staggered positions and alternates between two tiles so each tile grows while the drone travels and harvests the other. Its single-drone version uses a 5×5 field to reduce setup time. The daily route checks the existing field before planting.
+- **Wood (`wood`)** uses a checkerboard to keep neighboring trees from slowing one another. Earlier variants tracked companion requests separately within each block. Later variants keep half the field as grass, so a tree can use a grass companion across a block boundary. Drones replant the tree tiles after harvesting and leave the companion grass in place. Watering thresholds were compared across several seeds.
+- **Carrots (`carrot`)** separate production and companion tiles. The final multi-drone variant picks eight production tiles in each 4×8 block, placing most near the center to leave more reachable companion tiles. Arrays track requests by tile index. Requests for the same companion type can share a tile, and the tile is released when its final request ends. Each drone has a separate seed budget. Earlier dynamic allocation increased travel and replanting costs.
 
-多机的分叉调度会把子任务分给新无人机继续启动，缩短启动链。每架无人机负责固定区域，只有明确允许共享的草格会跨区引用。参考 [enihsyou 的开源方案](https://github.com/enihsyou/The-Farmer-Was-Replaced) 和 [Berman510 的测试记录](https://github.com/Berman510/tfwr)。
+In multi-drone runs, newly spawned drones help launch the remaining tasks, reducing the number of launches that must happen in sequence. Each drone owns a fixed region. Only grass tiles designated as shared can be referenced across regions. The layouts and comparisons draw on [enihsyou's project](https://github.com/enihsyou/The-Farmer-Was-Replaced) and [Berman510's test records](https://github.com/Berman510/tfwr).
 
-## 仙人掌、南瓜与向日葵
+## Cactus, pumpkins, and sunflowers
 
-- 仙人掌 `cactus`。单机沿行插入，把较小尺寸不断与西面和南面较大的格子交换，同时维护已经种下的区域的二维单调性。多机先按行种植和排序，汇合后按列排序，最后一次收割连通的成熟仙人掌。缓存版只在需要实际交换时走到目标位置，省掉比较已经有序的地段所需的移动。
-- 南瓜 `pumpkin`。把多机田地分成由空行或空列隔开的成熟连通块。每块达到游戏的最大面积倍率后即可独立收获，死苗只重种所在格。每块的两架无人机可以并行种植和补苗。单机按离当前坐标最近的一角开始蛇形种植，优先给最后种下的苗和死苗重种浇水。
-- 向日葵 `power`。种下后用 `measure()` 把坐标分到 7 至 15 花瓣的桶。各档按花瓣从多到少收割，桶内尽量先走到最近的待收点。单机留少量低花瓣作为奖励所需的余量，多机在每个花瓣档后用普通草的收割数量确认所有无人机都完成了该档。
+- **Cactus (`cactus`)** uses insertion by row for single-drone runs. The drone swaps smaller cacti with larger neighbors to the west or south while keeping the planted area sorted along both axes. In multi-drone runs, drones plant and sort rows, wait for every row to finish, sort columns, and harvest the connected mature field once. The cached variant visits tiles only when a swap is required.
+- **Pumpkins (`pumpkin`)** divides the multi-drone field into blocks separated by empty rows and columns. Each block can be harvested as soon as it reaches the maximum area multiplier. Drones replace dead seedlings tile by tile. Two drones can plant and repair each block in parallel. The single-drone route starts at the nearest corner, plants in a serpentine path, and prioritizes watering late plantings and replacements.
+- **Sunflower power (`power`)** uses `measure()` to group flowers by petal count from 7 to 15. Drones harvest in descending order and favor nearby flowers within each group. The single-drone route leaves a few low-petal flowers in place to preserve the bonus. The multi-drone route uses the amount of hay harvested as a shared counter that signals when all drones have finished a petal group.
 
-参考 [公开仙人掌代码](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus.py)、[公开南瓜代码](https://github.com/enihsyou/The-Farmer-Was-Replaced) 和 [公开向日葵代码](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/sunflowers.py)。
+Related public implementations include [cactus sorting](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/cactus.py), [pumpkin harvesting](https://github.com/enihsyou/The-Farmer-Was-Replaced), and [sunflower harvesting](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/sunflowers.py).
 
-## 迷宫金币
+## Maze gold
 
-多机 32×32 布局划成 32 个互不重叠的 5×5 迷宫，使用普通奇异物质生成迷宫并重复移动宝藏。开始时用已知树形道路定位。墙逐步打开后，记录双向通行边，在缓存图中从起点和目标同时做广度优先搜索，找到交汇点后拼接路径。单机先试已知的横竖直达路径，走不通再搜索。多机比赛按全田金币目标协调退出，日常版保留每座迷宫各收指定次数的语义。参考 [Steam 社区对独立迷宫布局的讨论](https://steamcommunity.com/app/2060160/discussions/0/570417860284821148/) 和 [公开单机实现](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/maze_single.py)。
+The 32×32 multi-drone layout fits 32 separate 5×5 mazes. Drones use Weird Substance to create mazes and move treasure repeatedly. They start with the known tree of corridors. As walls open, they add connections to a cached graph and run bidirectional breadth-first search, joining the two paths at their meeting point. The single-drone route checks for a known direct path before searching. Multi-drone leaderboard runs stop when they reach the shared gold target. Daily runs collect the configured number of treasures from each maze. See the [Steam discussion on independent maze layouts](https://steamcommunity.com/app/2060160/discussions/0/570417860284821148/) and the [public single-drone implementation](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/maze_single.py).
 
-## 恐龙骨头
+## Dinosaur bones
 
-蛇的安全基线是一条覆盖全田的闭环。苹果上的 `measure()` 提供下一个苹果坐标。把坐标变成闭环序号后，只在头到目标之间、并能给蛇尾留出足够空间时走捷径。到苹果前的最后一段沿闭环走，使捷径留下的空格退出蛇身占用范围。先比较减少逐步判断、展开直线循环和直达闭环上限三种改法。直达版沿同向行横走，必要时从上一行拐上，并用西侧边线回到下一圈。
+The baseline follows a cycle that covers the entire field. Calling `measure()` on an apple returns the next apple's coordinates. The script maps those coordinates to a cycle index and takes a shortcut only if it advances toward the apple and leaves enough room for the tail. The final approach follows the cycle until the gaps left by the shortcut fall behind the tail. Early variants compared fewer per-step checks, loop unrolling on straight segments, and a direct route to the furthest safe point on the cycle. The direct variant moves across rows that face the required direction and uses the west edge to return to the start of the cycle.
 
-冲榜版改用公开的边框波形。蛇身较短时沿边框循环，在目标列向场内追苹果。尾巴够长后，沿奇数列把空间逐条填满，使新苹果更容易出现在前面。第六版尝试在长直线中途停下刷新目标，实测反而更慢。第七版保留完整的填列动作，在测不到下一颗苹果时尝试最后一次合法移动，再脱帽验收骨头净增量。第八版只在确认苹果坐标仍有效时，把南北边线的逐格探测改成一段定长移动。坐标可能失效时保留原探测。八组对照模型中，第七、八版的完整移动序列一致。参考 [公开波形源码](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/dianosaus.py)、[路径比较](https://www.reddit.com/r/TheFarmerWasReplaced/comments/1omrxi4/some_dinosaur_path_speed_comparisons/) 和 [开源策略整理](https://github.com/cornernote/the_farmer_was_replaced-scripts/tree/main/docs/strategy/dinosaur)。
+The leaderboard route adapts a public perimeter pattern. With a short tail, the snake follows the edges and moves inward along the target column to reach an apple. As the tail grows, sweeps through odd columns fill open space and make new apples more likely to appear ahead. Variant 6 tried stopping partway through long sweeps to refresh the target and took longer in testing. Variant 7 keeps each column sweep intact, attempts a final legal move when no next apple can be measured, and checks the bone gain after removing the hat. Variant 8 replaces per-tile checks on northbound and southbound perimeter segments with a fixed number of moves when the apple coordinates are still valid. It keeps the per-tile checks when the coordinates might be stale. Variants 7 and 8 followed identical move sequences in eight model tests. See the [upstream perimeter route](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/dianosaus.py), [route comparisons](https://www.reddit.com/r/TheFarmerWasReplaced/comments/1omrxi4/some_dinosaur_path_speed_comparisons/), and [public strategy notes](https://github.com/cornernote/the_farmer_was_replaced-scripts/tree/main/docs/strategy/dinosaur).
 
-## 计时和范围
+## Timing and scope
 
-- 本次范围是当前本体的 15 个资源榜。最快重置是解锁进度榜。水、肥料和奇异物质在这 15 项中没有官方榜单。水与肥料来自研究等级决定的被动补给。奇异物质沿用通过感染作物收取的日常入口。
-- 固定种子跑游戏内 `simulate`，把目标资源从零开始，记录最终数量、耗时和是否达标。正式比赛通过 `leaderboard_run` 运行，由游戏自行完成重复计时和 Steam 提交。最后用 Steam 返回的全球名次验收。
-- `farm_rank_hay_reference.py` 直接移植公开干草单机和多机算法，并封装为榜单入口。`farm_bone_rail.py` 基于公开恐龙源码改造，末尾苹果处理和第八版边线移动由本次编写。两处都保留 enihsyou 的 MIT 许可证和版权声明。其余资源榜代码和日常适配器独立实现，策略来源列在各节。 [MIT 许可证](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/LICENSE)
+- The benchmark covers the 15 base-game resource leaderboards. Fastest Reset tracks unlock progression separately. Water and fertilizer arrive passively at rates set by research. The daily Weird Substance route collects it by harvesting infected crops.
+- Fixed-seed tests use the game's `simulate` function. The target resource starts at zero, and the script records the final quantity, elapsed time, and whether it met the target. Official runs use `leaderboard_run`, which lets the game repeat and time the challenge and submit the score to Steam. Global ranks were verified against Steam's results.
+- `farm_rank_hay_reference.py` ports enihsyou's single-drone and multi-drone hay routes. `farm_bone_rail.py` adapts the same project's dinosaur source, with final-apple handling and variant 8's perimeter optimization implemented here. Both files retain the original copyright and MIT license. This project independently implements the other leaderboard routes and daily adapters, with references in the sections above. [Upstream MIT license](https://github.com/enihsyou/The-Farmer-Was-Replaced/blob/main/LICENSE)

@@ -1,4 +1,4 @@
-# 改 CASES 可复测同一批次。每项依次为资源、是否单机、候选版本、随机种子。
+# Edit CASES to rerun a batch. Each entry contains the mode, single-drone flag, variant, and seed.
 CASES = [("cactus", False, 3, 1709), ("cactus", True, 3, 1709),
          ("cactus", False, 2, 1709), ("cactus", True, 2, 1709),
          ("gold", False, 3, 1709), ("gold", True, 3, 1709),
@@ -33,7 +33,7 @@ def sweep(cases):
         research = Unlocks
         stock = supplies(mode)
         if variant < 0:
-            # 日常对照继承当前存档的研究等级，且在独立库存里执行。
+            # Daily tests use the save's current research levels and an isolated inventory.
             research = {}
             for technology in Unlocks:
                 level = num_unlocked(technology)
